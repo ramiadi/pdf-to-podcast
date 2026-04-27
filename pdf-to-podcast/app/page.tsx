@@ -6,6 +6,37 @@ export default function Home() {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [audioUrl, setAudioUrl] = useState("");
+
+  const handleTTS = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/parse/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) {
+        const raw = await res.text();
+        let message = "Kunne ikke generere lyd";
+        try {
+          message = JSON.parse(raw).error ?? message;
+        } catch {
+          message = `Serverfeil ${res.status}`;
+        }
+        setError(message);
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setAudioUrl(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Noe gikk galt");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleUpload = async () => {
     if (!file) return;
@@ -66,9 +97,23 @@ export default function Home() {
         )}
 
         {text && (
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 max-h-96 overflow-y-auto">
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{text}</p>
-          </div>
+          <>
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 max-h-96 overflow-y-auto">
+              <p className="text-sm text-gray-700 whitespace-pre-wrap">{text}</p>
+            </div>
+
+            <button
+              onClick={handleTTS}
+              disabled={loading}
+              className="w-full py-3 rounded-xl bg-green-600 text-white font-medium hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {loading ? "Genererer lyd…" : "Lag podcast-lyd 🎙️"}
+            </button>
+          </>
+        )}
+
+        {audioUrl && (
+          <audio controls src={audioUrl} className="w-full mt-4" />
         )}
       </div>
     </main>

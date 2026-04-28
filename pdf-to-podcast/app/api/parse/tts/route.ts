@@ -5,7 +5,7 @@ const openai = new OpenAI({ apiKey: process.env.OPEN_AI_KEY });
 
 export async function POST(req: NextRequest) {
   try {
-    const { text } = await req.json();
+    const { text, voice = "alloy" } = await req.json();
 
     if (!text || text.trim().length === 0) {
       return NextResponse.json({ error: "Ingen tekst å konvertere" }, { status: 400 });
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
     const mp3 = await openai.audio.speech.create({
       model: "tts-1",
-      voice: "alloy",
+      voice,
       input: text.slice(0, 4096),
     });
 
